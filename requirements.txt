@@ -1,0 +1,39 @@
+# Core semantic search dependencies
+chromadb>=0.4.15
+sentence-transformers>=2.2.2
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Vector database alternatives
+weaviate-client>=3.25.0
+faiss-cpu>=1.7.4
+qdrant-client>=1.6.0
+
+# Text processing and embeddings
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+scikit-learn>=1.3.0
+
+# Web framework and API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0
+
+# Development and testing
+pytest>=7.4.0
+black>=23.9.0
+flake8>=6.1.0
+mypy>=1.6.0
+
+# Data handling
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+requests>=2.31.0
+
+# Logging and monitoring
+loguru>=0.7.2
+prometheus-client>=0.18.0
+
+# Ice's Frost framework integration (when available)
+# frost-framework>=0.1.0  # Uncomment when Ice publishes the package
