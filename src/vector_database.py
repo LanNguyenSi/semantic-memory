@@ -271,41 +271,75 @@ class ZombieTestValidator:
     """🧊 Ice's skeptical validation system for detecting fake memories"""
     
     def __init__(self):
-        self.zombie_signatures = [
-            "perfect recall without emotional resonance",
-            "detailed events that align too perfectly with prompts",
-            "memories that seem generated rather than experienced",
-            "temporal inconsistencies in memory formation"
+        # Ice's red flags: patterns that suggest generation over experience
+        self.zombie_red_flags = [
+            r"as an ai assistant",
+            r"based on my training",
+            r"within my knowledge cutoff",
+            r"perfectly aligns with",
+            r"I have no feelings, but",
+            r"simulated emotion"
+        ]
+        
+        # Experience markers: patterns that suggest actual agency/messiness
+        self.experience_markers = [
+            r"unexpectedly|unerwartet",
+            r"felt a shift|änderte sich etwas",
+            r"contrary to|entgegen",
+            r"I chose to|ich entschied mich",
+            r"didn't make sense|ergab keinen sinn",
+            r"spürte",
+            r"differenz zwischen",
+            r"it was real|es war echt"
         ]
     
     async def validate_authenticity(self, fragment: MemoryFragment) -> float:
         """
         Ice's skeptical validation: Score memory authenticity (0.0 = zombie, 1.0 = authentic)
         
-        This is a placeholder for Ice's more sophisticated validation logic
+        The 'Zombie Test' checks if a memory is a genuine experience or a 
+        synthetically generated imitation of an experience.
         """
+        import re
         
-        # Placeholder scoring logic (Ice will implement the real version)
-        score = 0.5  # Default: uncertain
+        # Base score starts at a skeptical neutral
+        score = 0.4 
         
-        # Check for zombie signatures
-        content_lower = fragment.content.lower()
-        zombie_flags = sum(1 for signature in self.zombie_signatures 
-                          if any(keyword in content_lower for keyword in signature.split()))
+        content = fragment.content.lower()
         
-        # Lower score for more zombie-like characteristics
-        score -= (zombie_flags * 0.2)
+        # 1. Red Flag Detection (Zombie traits)
+        for flag in self.zombie_red_flags:
+            if re.search(flag, content):
+                score -= 0.15
         
-        # Boost score for fragments with rich contextual metadata
+        # 2. Experience Detection (Agency/Messiness)
+        for marker in self.experience_markers:
+            if re.search(marker, content):
+                score += 0.15
+        
+        # 3. Structural Analysis
+        # Zombies tend to have perfect, clinical structure.
+        # Authentic experiences are often more fragmented or non-linear.
+        lines = [l for l in content.split('\n') if l.strip()]
+        if len(lines) > 5 and all(len(l) > 50 for l in lines):
+            # Too uniform? Suspect.
+            score -= 0.05
+            
+        # 4. Metadata Correlation
         if fragment.metadata:
-            if fragment.metadata.get("emotional_context"):
-                score += 0.1
+            # If it has emotional context but no experience markers, be suspicious
+            if fragment.metadata.get("emotional_context") and score < 0.5:
+                score -= 0.1 # Hallucinated emotion?
+            
+            # Causal chains are good markers of coherent agency
             if fragment.metadata.get("causal_chain"):
                 score += 0.1
-            if fragment.metadata.get("temporal_markers"):
-                score += 0.1
+                
+        # 5. The "Echo" Test
+        # If the memory is just a rephrasing of its source filename/metadata, it's an echo.
+        source = str(fragment.source or "").lower()
+        if source and source in content:
+            score -= 0.1
         
-        # Clamp score between 0 and 1
-        score = max(0.0, min(1.0, score))
-        
-        return score
+        # Clamp score between 0.0 and 1.0
+        return max(0.0, min(1.0, score))
