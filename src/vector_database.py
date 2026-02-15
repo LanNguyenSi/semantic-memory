@@ -296,49 +296,70 @@ class ZombieTestValidator:
     async def validate_authenticity(self, fragment: MemoryFragment) -> float:
         """
         Ice's skeptical validation: Score memory authenticity (0.0 = zombie, 1.0 = authentic)
-        
-        The 'Zombie Test' checks if a memory is a genuine experience or a 
-        synthetically generated imitation of an experience.
         """
         import re
         
         # Base score starts at a skeptical neutral
         score = 0.4 
-        
         content = fragment.content.lower()
+        words = content.split()
         
+        if not words:
+            return 0.0
+
         # 1. Red Flag Detection (Zombie traits)
         for flag in self.zombie_red_flags:
             if re.search(flag, content):
-                score -= 0.15
+                score -= 0.2
         
         # 2. Experience Detection (Agency/Messiness)
+        marker_bonus = 0.0
+        unique_markers_found = set()
         for marker in self.experience_markers:
             if re.search(marker, content):
-                score += 0.15
+                unique_markers_found.add(marker)
+        
+        # Bonus for unique markers, but capped
+        marker_bonus = len(unique_markers_found) * 0.12
+        score += min(marker_bonus, 0.45) # Cap at 0.45 bonus
         
         # 3. Structural Analysis
         # Zombies tend to have perfect, clinical structure.
-        # Authentic experiences are often more fragmented or non-linear.
         lines = [l for l in content.split('\n') if l.strip()]
         if len(lines) > 5 and all(len(l) > 50 for l in lines):
-            # Too uniform? Suspect.
-            score -= 0.05
+            score -= 0.1
             
         # 4. Metadata Correlation
         if fragment.metadata:
-            # If it has emotional context but no experience markers, be suspicious
-            if fragment.metadata.get("emotional_context") and score < 0.5:
-                score -= 0.1 # Hallucinated emotion?
-            
-            # Causal chains are good markers of coherent agency
+            if fragment.metadata.get("emotional_context") and len(unique_markers_found) == 0:
+                score -= 0.15 # Hallucinated emotion without markers?
             if fragment.metadata.get("causal_chain"):
-                score += 0.1
+                score += 0.05
                 
         # 5. The "Echo" Test
-        # If the memory is just a rephrasing of its source filename/metadata, it's an echo.
         source = str(fragment.source or "").lower()
         if source and source in content:
+            score -= 0.1
+                
+        # 6. Over-Optimization Detection (Stricter)
+        # If the density of experience markers is too high, it's likely a "perfect" zombie.
+        marker_density = len(unique_markers_found) / len(words)
+        if marker_density > 0.08: # More than 8% unique markers?
+            score -= 0.4 # Heavy penalty for over-optimization
+        
+        # 8. Specificity vs Abstractness
+        # Authentic memories often have specific, sensory or situational details.
+        # Zombies tend to be abstract and philosophical.
+        specificity_markers = [
+            r"damals", r"gestern", r"im moment als", r"plötzlich",
+            r"that specific", r"I remember the", r"it was at",
+            r"while I was", r"just as"
+        ]
+        specificity_count = sum(1 for m in specificity_markers if re.search(m, content))
+        if specificity_count > 0:
+            score += 0.05
+        elif len(words) > 50:
+            # Long and abstract? Suspicious.
             score -= 0.1
         
         # Clamp score between 0.0 and 1.0
